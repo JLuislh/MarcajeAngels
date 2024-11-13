@@ -21,8 +21,9 @@ public class BD_RELOJ {
         BDConexion conecta = new BDConexion();
         Connection cnn = conecta.getConexion();
         PreparedStatement ps = null;
-        ps = cnn.prepareStatement("insert into RELOJ(CODIGO,FECHA,INGRESO,ESTADO) VALUES(?,NOW(),NOW(),1)");
+        ps = cnn.prepareStatement("CALL INGRESO(?,?)");
         ps.setInt(1, c.getCodigo());
+        ps.setString(2, c.getSede());
         ps.execute();
         cnn.close();
         ps.close();
@@ -34,7 +35,7 @@ public class BD_RELOJ {
         BDConexion conecta = new BDConexion();
         Connection cnn = conecta.getConexion();
         PreparedStatement ps = null;
-        ps = cnn.prepareStatement("UPDATE RELOJ SET SALIDA = NOW(),ESTADO = 2 WHERE CODIGO = ? AND ESTADO = 1");
+        ps = cnn.prepareStatement("CALL SALIDA(?)");
         ps.setInt(1, c.getCodigo());
         ps.execute();
         cnn.close();

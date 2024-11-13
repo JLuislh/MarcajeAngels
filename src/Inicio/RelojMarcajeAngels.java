@@ -2,6 +2,7 @@
 package Inicio;
 
 import java.awt.Color;
+import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.Timer;
@@ -20,15 +21,18 @@ import marcajeangels.ClassReloj;
  *
  * @author jluis
  */
-public class RelojMarcajeAngels extends javax.swing.JFrame {
+public final class RelojMarcajeAngels extends javax.swing.JFrame {
      
     int marca;
     int id;
     int codigom;
+    String sede;
+    String Sucursal = "";
     /**
      * Creates new form RelojMarcajeAngels
      */
     public RelojMarcajeAngels() {
+        this.sede = "";
         
          try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -36,10 +40,14 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
         }
         initComponents();
+        
         setLocationRelativeTo(null);
+        sede = System.getProperty("user.name");
+        logear();
     }
     
      Timer timer = new Timer(500, new ActionListener() {
+        @Override
         public void actionPerformed(ActionEvent e) {
             semaforo.setBackground(Color.white);
             codigo.setText("");
@@ -48,6 +56,7 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
     });
 
     Timer timer2 = new Timer(60000, new ActionListener() {
+        @Override
         public void actionPerformed(ActionEvent e) {
             marca = 0;
             codigo.setText("");
@@ -65,25 +74,37 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
             ps.executeUpdate("call actualizarHoras("+id+")");
             con.close();
             ps.close();
-        } catch (Exception e) {
+        } catch (SQLException e) {
             JOptionPane.showMessageDialog(null, "Error" + e);
+        }
+    }
+    
+    private void buscasucursal(){
+        switch (sede) {
+            case "it" -> Sucursal = "TRABAJO";
+            case "angelsparaiso" -> Sucursal = "PARAISO";
+            case "angelssanluis" -> Sucursal = "PUERTA NEGRA";
+            case "angelspalencia" -> Sucursal = "PALENCIA";
+            case "angelsresidenciales" -> Sucursal = "RESIDENCIALES";
+            case "user" -> Sucursal = "SANTA INNES";
+            default -> {
+            }
         }
     }
 
     
      private void guardarINGRESO() {
-  
+        buscasucursal();
         try {
-            
             ClassReloj g = new ClassReloj();
             g.setCodigo(Integer.parseInt(codigo.getText().substring(1, 5)));
+            g.setSede(sede);
             BD_RELOJ.IngresoDatosRelojin(g);
             timer.setRepeats(false);
             timer.start();
-        } catch (Exception e) {
+        } catch (NumberFormatException | SQLException e) {
             JOptionPane.showMessageDialog(null, "ERROR DE INSERTAR" + e);
         }
-
     }
      
     private void guardarSALIDA() {
@@ -96,8 +117,7 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
             AgregarHoras();
             timer.setRepeats(false);
             timer.start();
-
-        } catch (Exception e) {
+        } catch (NumberFormatException | SQLException e) {
             JOptionPane.showMessageDialog(null, "ERROR DE INSERTAR" + e);
         }
     }
@@ -115,7 +135,6 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
                 codigo.setText("");
 
             } else {
-                System.out.println("NO");
                 Mensaje.setText("ERROR");
                 semaforo.setBackground(Color.red);
                 codigo.setText("");
@@ -124,7 +143,7 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
                 codigo.setText("");
                 
             }
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             semaforo.setBackground(Color.red);
             codigo.setText("");
             timer.setRepeats(false);
@@ -140,7 +159,8 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
                 BDConexion conecta = new BDConexion();
                 Connection cn = conecta.getConexion();
                 java.sql.Statement stmt = cn.createStatement();
-                ResultSet rs = stmt.executeQuery("select COUNT(codigo) as codigo, sum(id_reloj) as id_reloj from reloj where codigo= " + codigo.getText().substring(1, 5) + " and estado = 1 and date_format(fecha,'dd/mm/yy') = date_format(current_date,'dd/mm/yy')");
+                //ResultSet rs = stmt.executeQuery("select COUNT(codigo) as codigo, sum(id_reloj) as id_reloj from reloj where codigo= " + codigo.getText().substring(1, 5) + " and estado = 1 and date_format(fecha,'dd/mm/yy') = date_format(current_date,'dd/mm/yy')");
+                ResultSet rs = stmt.executeQuery("call verificar(" + codigo.getText().substring(1, 5) + ")");
                 while (rs.next()) {
                       codigom = rs.getInt(1);
                       id = rs.getInt(2);
@@ -148,7 +168,7 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
                 rs.close();
                 stmt.close();
                 cn.close();
-            } catch (Exception error) {
+            } catch (SQLException error) {
                 System.out.print(error);
             }
                 System.out.println("Shit = "+ codigom);
@@ -173,6 +193,26 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
                 timer.start();
                 }
      }
+     
+     public void logear(){
+        try {
+            BDConexion Conn = new BDConexion();
+            Connection con = Conn.getConexion();
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery("select COUNT(user) as U from USUARIOS where user= 'angels' and pass = 'angels' and estado = 1" );
+            rs.next();
+            int USUARIO = rs.getInt("U");
+            if (USUARIO == 1) {
+                 System.out.println("LOGEADO");
+                  
+            } else {
+                 JOptionPane.showMessageDialog(null, "NO TIENE CONEXION A INTERNET");
+            }
+        } catch (HeadlessException | SQLException e) {
+            JOptionPane.showMessageDialog(null, "ERROR CONTACTE AL ADMINISTRADOR DEL SISTEMA" + e);
+        }
+    
+    }
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -306,6 +346,7 @@ public class RelojMarcajeAngels extends javax.swing.JFrame {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 new RelojMarcajeAngels().setVisible(true);
             }

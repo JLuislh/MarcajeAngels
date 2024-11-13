@@ -11,6 +11,15 @@ package marcajeangels;
 public class ClassReloj {
     
        private int codigo;
+       private String sede;
+
+    public String getSede() {
+        return sede;
+    }
+
+    public void setSede(String sede) {
+        this.sede = sede;
+    }
 
     public int getCodigo() {
         return codigo;
