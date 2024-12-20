@@ -15,6 +15,7 @@ import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import marcajeangels.BDConexion;
+import marcajeangels.BDPool;
 import marcajeangels.BD_RELOJ;
 import marcajeangels.ClassReloj;
 /**
@@ -68,7 +69,7 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
     public void AgregarHoras() {
 
         try {
-            BDConexion conecta = new BDConexion();
+            BDPool conecta = new BDPool();
             Connection con = conecta.getConexion();
             Statement ps = con.createStatement();
             ps.executeUpdate("call actualizarHoras("+id+")");
@@ -156,7 +157,7 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
      private void validarExistencia() {
 
           try {
-                BDConexion conecta = new BDConexion();
+                BDPool conecta = new BDPool();
                 Connection cn = conecta.getConexion();
                 java.sql.Statement stmt = cn.createStatement();
                 //ResultSet rs = stmt.executeQuery("select COUNT(codigo) as codigo, sum(id_reloj) as id_reloj from reloj where codigo= " + codigo.getText().substring(1, 5) + " and estado = 1 and date_format(fecha,'dd/mm/yy') = date_format(current_date,'dd/mm/yy')");
@@ -196,7 +197,7 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
      
      public void logear(){
         try {
-            BDConexion Conn = new BDConexion();
+            BDPool Conn = new BDPool();
             Connection con = Conn.getConexion();
             Statement stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery("select COUNT(user) as U from USUARIOS where user= 'angels' and pass = 'angels' and estado = 1" );

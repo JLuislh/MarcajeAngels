@@ -18,7 +18,7 @@ public class BD_RELOJ {
     
      public static void IngresoDatosRelojin(ClassReloj c) throws SQLException {
         
-        BDConexion conecta = new BDConexion();
+        BDPool conecta = new BDPool();
         Connection cnn = conecta.getConexion();
         PreparedStatement ps = null;
         ps = cnn.prepareStatement("CALL INGRESO(?,?)");
@@ -32,7 +32,7 @@ public class BD_RELOJ {
     
     public static void IngresoDatosRelojout(ClassReloj c) throws SQLException {
         
-        BDConexion conecta = new BDConexion();
+        BDPool conecta = new BDPool();
         Connection cnn = conecta.getConexion();
         PreparedStatement ps = null;
         ps = cnn.prepareStatement("CALL SALIDA(?)");
