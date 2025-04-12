@@ -5,9 +5,16 @@
  */
 package marcajeangels;
 
+import java.awt.PageAttributes.MediaType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 
 /**
  *
@@ -27,7 +34,10 @@ public class BD_RELOJ {
         ps.execute();
         cnn.close();
         ps.close();
+        
+        
     }  
+
     
     
     public static void IngresoDatosRelojout(ClassReloj c) throws SQLException {

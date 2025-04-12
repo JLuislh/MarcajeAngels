@@ -15,7 +15,8 @@ public class BDPool {
     ds.setDriverClassName("com.mysql.cj.jdbc.Driver");
     ds.setUsername("marcajea");
     ds.setPassword("Coast@cm");
-    ds.setUrl("jdbc:mysql://192.168.196.46:3306/marcaje?useTimezone=true&serverTimezone=UTC");
+    //ds.setUrl("jdbc:mysql://192.168.196.46:3306/marcaje?useTimezone=true&serverTimezone=UTC");
+    ds.setUrl("jdbc:mysql://140.84.178.126:3306/marcaje?useTimezone=true&serverTimezone=UTC");
     ds.setInitialSize(5);
     return ds;
     }

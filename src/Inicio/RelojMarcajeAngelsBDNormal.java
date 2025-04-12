@@ -1,37 +1,40 @@
 
 package Inicio;
 
-import com.google.gson.Gson;
 import java.awt.Color;
+import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.Timer;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import marcajeangels.CodigosApi;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import marcajeangels.BDPool;
+import marcajeangels.BD_RELOJ;
+import marcajeangels.ClassReloj;
 
 /**
  *
  * @author jluis
  */
-public final class RelojMarcajeAngels extends javax.swing.JFrame {
+public final class RelojMarcajeAngelsBDNormal extends javax.swing.JFrame {
      
     int marca;
-    int id;
+    int id = 1000;
     int codigom;
     String sede;
     String Sucursal = "";
+    
     int codigoapi;
     int idapi;
     /**
      * Creates new form RelojMarcajeAngels
      */
-    public RelojMarcajeAngels() {
+    public RelojMarcajeAngelsBDNormal() {
         this.sede = "";
         
          try {
@@ -43,6 +46,7 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
         
         setLocationRelativeTo(null);
         sede = System.getProperty("user.name");
+        logear();
     }
     
      Timer timer = new Timer(500, new ActionListener() {
@@ -64,6 +68,20 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
         }
     });
     
+    public void AgregarHoras() {
+
+        try {
+            BDPool conecta = new BDPool();
+            Connection con = conecta.getConexion();
+            Statement ps = con.createStatement();
+            ps.executeUpdate("call actualizarHoras("+id+")");
+            con.close();
+            ps.close();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error" + e);
+        }
+    }
+    
     private void buscasucursal(){
         switch (sede) {
             case "it" -> Sucursal = "TRABAJO";
@@ -77,14 +95,43 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
         }
     }
 
+    
+     private void guardarINGRESO() {
+        buscasucursal();
+        try {
+            ClassReloj g = new ClassReloj();
+            g.setCodigo(Integer.parseInt(codigo.getText().substring(1, 5)));
+            g.setSede(sede);
+            BD_RELOJ.IngresoDatosRelojin(g);
+            timer.setRepeats(false);
+            timer.start();
+        } catch (NumberFormatException | SQLException e) {
+            JOptionPane.showMessageDialog(null, "ERROR DE INSERTAR" + e);
+        }
+    }
+     
+    private void guardarSALIDA() {
 
+        try {
+
+            ClassReloj g = new ClassReloj();
+            g.setCodigo(Integer.parseInt(codigo.getText().substring(1, 5)));
+            BD_RELOJ.IngresoDatosRelojout(g);
+            AgregarHoras();
+            timer.setRepeats(false);
+            timer.start();
+        } catch (NumberFormatException | SQLException e) {
+            JOptionPane.showMessageDialog(null, "ERROR DE INSERTAR" + e);
+        }
+    }
+    
     private void marcar() {
         String s = codigo.getText();
         char firstCharacter = s.charAt(0);
         try {
 
             if (firstCharacter == '%') {
-                existe();
+                validarExistencia();
                 marca = Integer.parseInt(codigo.getText().substring(1, 5));
                 timer2.setRepeats(false);
                 timer2.start();
@@ -108,51 +155,49 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
         }
 
     }
-     
-     
-     public void existe(){
-         String apiUrl = "http://140.84.178.126:3000/reloj/"+codigo.getText().substring(1, 5);
-         OkHttpClient client = new OkHttpClient();
-         Request request = new Request.Builder()
-                .url(apiUrl)
-                .build();
-        try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                 String responseBody = response.body().string();
-                //System.out.println("Código de estado: " + response.code());
-                System.out.println("Respuesta: " + responseBody);
-                Gson gson = new Gson();
-                CodigosApi persona = gson.fromJson(responseBody, CodigosApi.class);
-                codigoapi = persona.getCodigo();
-                idapi = persona.getId_reloj();
-                System.out.println(codigoapi+" Inicio "+idapi);
-            } else {
-                System.out.println("Error: " + response.code());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    
+     private void validarExistencia() {
 
-         if (codigoapi == 0) {
-                ingreso();
+          try {
+                BDPool conecta = new BDPool();
+                Connection cn = conecta.getConexion();
+                java.sql.Statement stmt = cn.createStatement();
+                //ResultSet rs = stmt.executeQuery("select COUNT(codigo) as codigo, sum(id_reloj) as id_reloj from reloj where codigo= " + codigo.getText().substring(1, 5) + " and estado = 1 and date_format(fecha,'dd/mm/yy') = date_format(current_date,'dd/mm/yy')");
+                ResultSet rs = stmt.executeQuery("call verificar(" + codigo.getText().substring(1, 5) + ")");
+                while (rs.next()) {
+                      codigom = rs.getInt(1);
+                      id = rs.getInt(2);
+                }
+                rs.close();
+                stmt.close();
+                cn.close();
+            } catch (SQLException error) {
+                System.out.print(error);
+            }
+                System.out.println("Shit = "+ codigom);
+                System.out.println("Shit = "+id);
+         
+            if (codigom == 0) {
+                guardarINGRESO();
                 semaforo.setBackground(Color.green);
                 Mensaje.setText("ENTRADA");codigo.requestFocus();
                 }
                 else if(marca != Integer.parseInt(codigo.getText().substring(1, 5))){
-                salida();
+                guardarSALIDA();
                 semaforo.setBackground(Color.yellow);
                 Mensaje.setText("SALIDA");
                 codigo.requestFocus();
+                //Thread.sleep(4000);
+                //semaforo.setBackground(Color.WHITE);
             }else{
                 semaforo.setBackground(Color.red);System.out.println("llega a YA MARCADO");
                 Mensaje.setText("YA MARCADO");codigo.requestFocus();
                 timer.setRepeats(false);
                 timer.start();
                 }
-        
      }
      
-     /*public void logear(){
+     public void logear(){
         try {
             BDPool Conn = new BDPool();
             Connection con = Conn.getConexion();
@@ -170,7 +215,7 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(null, "ERROR CONTACTE AL ADMINISTRADOR DEL SISTEMA" + e);
         }
     
-    }*/
+    }
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -292,21 +337,22 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(RelojMarcajeAngels.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(RelojMarcajeAngelsBDNormal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(RelojMarcajeAngels.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(RelojMarcajeAngelsBDNormal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(RelojMarcajeAngels.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(RelojMarcajeAngelsBDNormal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(RelojMarcajeAngels.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(RelojMarcajeAngelsBDNormal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new RelojMarcajeAngels().setVisible(true);
+                new RelojMarcajeAngelsBDNormal().setVisible(true);
             }
         });
     }
@@ -317,63 +363,4 @@ public final class RelojMarcajeAngels extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel semaforo;
     // End of variables declaration//GEN-END:variables
-
-
-public void ingreso(){
-        buscasucursal();
-        OkHttpClient client = new OkHttpClient();
-        String json = "{\"codigo\":\""+codigo.getText().substring(1, 5)+"\",\"sede\":\""+sede+"\"}";
-        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-        Request request = new Request.Builder()
-                .url("http://140.84.178.126:3000/relojingreso/"+codigo.getText().substring(1, 5))
-                .put(body)
-                .build();
-
-        // Ejecutar la solicitud
-        try (Response response = client.newCall(request).execute()) {
-            System.out.println("Código de respuesta: " + response.code());
-            System.out.println("Respuesta: " + response.body().string());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        timer.setRepeats(false);
-        timer.start();
-}
-
-public void salida(){
-
-        OkHttpClient client = new OkHttpClient();
-        String json = "{\"codigo\":\""+codigo.getText().substring(1, 5)+"\"}";
-        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-        Request request = new Request.Builder()
-                .url("http://140.84.178.126:3000/relojsalida/"+codigo.getText().substring(1, 5))
-                .put(body)
-                .build();
-        // Ejecutar la solicitud
-        try (Response response = client.newCall(request).execute()) {
-            System.out.println("Código de respuesta: " + response.code());
-            System.out.println("Respuesta: " + response.body().string());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        horas();
-        timer.setRepeats(false);
-        timer.start();
-}
-public void horas(){
-        OkHttpClient client = new OkHttpClient();
-        String json = "{\"idapi\":\""+idapi+"\"}";
-        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-        Request request = new Request.Builder()
-                .url("http://140.84.178.126:3000/relojhoras/"+idapi)
-                .put(body)
-                .build();
-        // Ejecutar la solicitud
-        try (Response response = client.newCall(request).execute()) {
-            System.out.println("Código de respuesta: " + response.code());
-            System.out.println("Respuesta: " + response.body().string());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-}
 }
